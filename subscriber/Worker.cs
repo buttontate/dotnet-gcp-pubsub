@@ -42,7 +42,12 @@ namespace subscriber
                         Console.WriteLine($"Text: '{msg.Data.ToStringUtf8()}'");
                         
                     }
-                    subscriber.Acknowledge(subscriptionName, response.ReceivedMessages.Select(m => m.AckId));
+
+                    if (response.ReceivedMessages.Any())
+                    {
+                        subscriber.Acknowledge(subscriptionName, response.ReceivedMessages.Select(m => m.AckId));
+                    }
+                    
                 }
                 
                 await Task.Delay(5000, stoppingToken);
