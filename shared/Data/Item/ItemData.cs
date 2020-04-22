@@ -25,7 +25,7 @@ namespace shared.Data.Item
         {
             using var connection = _connectionFactory.GetConnection();
 
-            var sql = "select * from item where updated is null";
+            var sql = "select * from item where updated is not null";
             return connection.Query<Models.Item.Item>(sql);
         }
 
