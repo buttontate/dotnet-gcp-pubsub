@@ -10,7 +10,7 @@ services:
       environment:
         - ASPNETCORE_ENVIRONMENT=Development
         - CONNECTIONSTRINGS__POSTGRES=Host=postgres;Port=5432;Username=postgres;Password=password;Database=postgres;
-        - PUBSUB_EMULATOR_HOST=localhost:8538
+        - PUBSUB_EMULATOR_HOST=pubsub:8538
       depends_on:
         - pubsub
     subscriber:
@@ -54,8 +54,6 @@ services:
     pubsub:
       image: niallmccullagh/docker-google-cloud-emulators:latest
       container_name: gcp-pubsub-emulator
-      networks:
-        - main
       ports:
         - "8538:8538"
       command:
@@ -64,5 +62,3 @@ services:
 volumes:
   postgres:
   pgadmin:
-networks:
-  main:

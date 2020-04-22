@@ -1,7 +1,5 @@
 using System;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Google.Cloud.PubSub.V1;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
