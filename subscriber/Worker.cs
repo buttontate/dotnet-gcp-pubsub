@@ -38,8 +38,8 @@ namespace subscriber
                     foreach (ReceivedMessage received in response.ReceivedMessages)
                     {
                         PubsubMessage msg = received.Message;
-                        Console.WriteLine($"Received message {msg.MessageId} published at {msg.PublishTime.ToDateTime()}");
-                        Console.WriteLine($"Text: '{msg.Data.ToStringUtf8()}'");
+                        _logger.LogInformation($"Received message {msg.MessageId} published at {msg.PublishTime.ToDateTime()}");
+                        _logger.LogInformation($"Text: '{msg.Data.ToStringUtf8()}'");
                         
                     }
 
