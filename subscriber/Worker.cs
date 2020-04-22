@@ -27,33 +27,38 @@ namespace subscriber
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                if (CanConnectToPubSub())
+                try
                 {
-                    // Subscribe to the topic.
-                    SubscriberServiceApiClient subscriber = CreateSubscriber();
-                    var subscriptionName = new SubscriptionName(GCP_PROJECT,GCP_SUBSCRIBER);
-                
-                    PullResponse response = subscriber.Pull(subscriptionName, returnImmediately: true, maxMessages: 100);
-                    foreach (ReceivedMessage received in response.ReceivedMessages)
+                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                    if (CanConnectToPubSub())
                     {
-                        PubsubMessage msg = received.Message;
-                        _logger.LogInformation($"Received message {msg.MessageId} published at {msg.PublishTime.ToDateTime()}");
-                        _logger.LogInformation($"Text: '{msg.Data.ToStringUtf8()}'");
-                        
-                    }
+                        // Subscribe to the topic.
+                        SubscriberServiceApiClient subscriber = CreateSubscriber();
+                        var subscriptionName = new SubscriptionName(GCP_PROJECT, GCP_SUBSCRIBER);
 
-                    if (response.ReceivedMessages.Any())
-                    {
-                        subscriber.Acknowledge(subscriptionName, response.ReceivedMessages.Select(m => m.AckId));
+                        PullResponse response = subscriber.Pull(subscriptionName, returnImmediately: true, maxMessages: 100);
+                        foreach (ReceivedMessage received in response.ReceivedMessages)
+                        {
+                            PubsubMessage msg = received.Message;
+                            _logger.LogInformation($"Received message {msg.MessageId} published at {msg.PublishTime.ToDateTime()}");
+                            _logger.LogInformation($"Text: '{msg.Data.ToStringUtf8()}'");
+                        }
+
+                        if (response.ReceivedMessages.Any())
+                        {
+                            subscriber.Acknowledge(subscriptionName, response.ReceivedMessages.Select(m => m.AckId));
+                        }
                     }
-                    
                 }
-                
+                catch (Exception e)
+                {
+                    _logger.LogError($"{e.Message} - {e.StackTrace}");
+                }
+
                 await Task.Delay(5000, stoppingToken);
             }
         }
-        
+
         private SubscriberServiceApiClient CreateSubscriber()
         {
             var subscriberBuilder = new SubscriberServiceApiClientBuilder();
@@ -62,16 +67,14 @@ namespace subscriber
             var subscriber = subscriberBuilder.Build();
             return subscriber;
         }
-        
+
         private bool CanConnectToPubSub()
         {
-            
-
             try
             {
                 var subscriber = CreateSubscriber();
                 SubscriptionName subscriptionName = new SubscriptionName(GCP_PROJECT, GCP_SUBSCRIBER);
-                subscriber.CreateSubscription(subscriptionName,new TopicName(GCP_PROJECT, GCP_TOPIC), pushConfig: null, ackDeadlineSeconds: 60);
+                subscriber.CreateSubscription(subscriptionName, new TopicName(GCP_PROJECT, GCP_TOPIC), pushConfig: null, ackDeadlineSeconds: 60);
             }
             catch (RpcException e)
                 when (e.Status.StatusCode == StatusCode.Unavailable)
@@ -80,11 +83,17 @@ namespace subscriber
                 return false;
             }
             catch (RpcException e)
+                when (e.Status.StatusCode == StatusCode.NotFound)
+            {
+                _logger.LogWarning($"Subscription not found");
+                return false;
+            }
+            catch (RpcException e)
                 when (e.Status.StatusCode == StatusCode.AlreadyExists)
             {
                 return true;
             }
-            
+
             return true;
         }
     }
