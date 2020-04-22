@@ -1,0 +1,68 @@
+version: '3'
+services:
+    publisher:
+      image: publisher:latest
+      build:
+        context: .
+        dockerfile: publisher/Dockerfile
+      ports:
+        - '6000:80'
+      environment:
+        - ASPNETCORE_ENVIRONMENT=Development
+        - CONNECTIONSTRINGS__POSTGRES=Host=postgres;Port=5432;Username=postgres;Password=password;Database=postgres;
+        - PUBSUB_EMULATOR_HOST=localhost:8538
+      depends_on:
+        - pubsub
+    subscriber:
+      image: subscriber:latest
+      build:
+        context: .
+        dockerfile: subscriber/Dockerfile
+      ports:
+        - '6001:80'
+      environment:
+        - ASPNETCORE_ENVIRONMENT=Development
+    postgres:
+      container_name: postgres
+      image: postgres:alpine
+      environment:
+        PGDATA: /data/postgres
+        POSTGRES_PASSWORD: password
+      volumes:
+        - postgres:/data/postgres
+      ports:
+        - 5432:5432
+      restart: unless-stopped
+    flyway:
+      image: flyway/flyway
+      command: -url=jdbc:postgresql://postgres/ -user=postgres -password=password migrate
+      volumes:
+        - ./flyway/sql:/flyway/sql
+      depends_on:
+        - postgres
+    pgadmin:
+      container_name: pgadmin
+      image: dpage/pgadmin4
+      environment:
+        PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
+        PGADMIN_DEFAULT_PASSWORD: password
+      volumes:
+        - pgadmin:/root/.pgadmin
+      ports:
+        - 5050:80
+      restart: unless-stopped
+    pubsub:
+      image: niallmccullagh/docker-google-cloud-emulators:latest
+      container_name: gcp-pubsub-emulator
+      networks:
+        - main
+      ports:
+        - "8538:8538"
+      command:
+        /bin/bash -c
+        "gcloud config set project emulator && gcloud beta emulators pubsub start --data-dir /mnt/data/pubsub --host-port 0.0.0.0:8538"
+volumes:
+  postgres:
+  pgadmin:
+networks:
+  main:

@@ -1,0 +1,11 @@
+﻿{
+  "profiles": {
+    "publisher": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development",
+        "PUBSUB_EMULATOR_HOST": "localhost:8538"
+      }
+    }
+  }
+}
